@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.10)
 project(ffms2 VERSION 5.1.1 LANGUAGES C CXX)
 include(GNUInstallDirs)
 
+set(CMAKE_CXX_STANDARD 11)
+
 option(BUILD_SHARED_LIBS "Build shared libraries (DLLs)." ON)
 
 if("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
