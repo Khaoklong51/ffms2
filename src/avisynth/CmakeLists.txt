@@ -1,0 +1,10 @@
+
+
+include_directories(${AVISYNTH_INCLUDE_DIRECTORIES}
+    ${PROJECT_SOURCE_DIR}/src/avisynth/)
+
+set(all_files
+    avisynth.cpp
+    avssources.cpp)
+
+add_library(AVISYNTH OBJECT ${all_files})

@@ -1,0 +1,84 @@
+
+add_library(ffms2)
+
+find_package(PkgConfig)
+if(NOT PkgConfig_FOUND)
+  message(FATAL "PkgConfig not found")
+endif()
+
+pkg_check_modules(PC_ZLIB REQUIRED zlib)
+
+pkg_check_modules(PC_FFMPEG REQUIRED
+    libavformat>=61.7.0 
+    libavcodec>=61.19.0 
+    libswscale>=8.3.0 
+    libavutil>=59.39.0 
+    libswresample>=5.3.0
+)
+
+add_definitions(
+    -D__STDC_CONSTANT_MACROS
+    -D_FILE_OFFSET_BITS=64
+    -DFFMS_EXPORTS)
+target_sources(ffms2 PRIVATE
+    $<TARGET_OBJECTS:CORE>
+    $<TARGET_OBJECTS:VAPOURSYNTH>)
+
+if(BUILD_SHARED_LIBS)
+    set(LIBRARIES ${PC_ZLIB_LIBRARIES} ${PC_FFMPEG_LIBRARIES})
+    set(LIBRARIES_DIRS ${PC_ZLIB_LIBRARY_DIRS} ${PC_FFMPEG_LIBRARY_DIRS})
+    set(INCLUDE_DIR ${PC_ZLIB_INCLUDE_DIRS} ${PC_FFMPEG_INCLUDE_DIRS})
+    set(COMPILE_OPTIONS ${PC_ZLIB_CFLAGS} ${PC_FFMPEG_CFLAGS})
+else()
+    set(LIBRARIES ${PC_ZLIB_STATIC_LIBRARIES} ${PC_FFMPEG_STATIC_LIBRARIES})
+    set(LIBRARIES_DIRS ${PC_ZLIB_STATIC_LIBRARY_DIRS} ${PC_FFMPEG_STATIC_LIBRARY_DIRS})
+    set(INCLUDE_DIR ${PC_ZLIB_STATIC_INCLUDE_DIRS} ${PC_FFMPEG_STATIC_INCLUDE_DIRS})
+    set(COMPILE_OPTIONS ${PC_ZLIB_STATIC_CFLAGS} ${PC_FFMPEG_STATIC_CFLAGS})
+endif()
+
+target_link_directories(ffms2 PRIVATE "${LIBRARIES_DIRS}")
+target_link_libraries(ffms2 PRIVATE "${LIBRARIES}")
+target_include_directories(ffms2 PRIVATE "${INCLUDE_DIR}")
+target_compile_options(ffms2 PRIVATE "${COMPILE_OPTIONS}")
+
+add_subdirectory(core)
+add_subdirectory(vapoursynth)
+
+if(ENABLE_INDEXER)
+    message(STATUS "Indexer building enabled")
+    add_subdirectory(index)
+endif()
+
+if(ENABLE_AVISYNTH)
+    add_subdirectory(avisynth)
+    target_sources(ffms2 PRIVATE
+        $<TARGET_OBJECTS:AVISYNTH>)
+endif()
+
+
+set(prefix ${CMAKE_INSTALL_PREFIX})
+set(exec_prefix ${prefix})
+set(libdir ${exec_prefix}/lib)
+set(includedir ${prefix}/include)
+set(FFMS_VERSION ${PROJECT_VERSION})
+
+configure_file(${PROJECT_SOURCE_DIR}/ffms2.pc.in ${CMAKE_BINARY_DIR}/ffms2.pc @ONLY)
+
+install(FILES "${CMAKE_BINARY_DIR}/ffms2.pc"
+    COMPONENT Development DESTINATION 
+    "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+
+file(GLOB API_HEADERS ${PROJECT_SOURCE_DIR}/include/*.h)
+set_target_properties(ffms2 PROPERTIES PUBLIC_HEADER "${API_HEADERS}")
+
+install(TARGETS ffms2
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+                COMPONENT Development
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+                COMPONENT Runtime
+                NAMELINK_COMPONENT Development
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+                COMPONENT Runtime
+        PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+                COMPONENT Development
+)
